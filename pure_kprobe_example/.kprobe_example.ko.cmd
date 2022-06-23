@@ -1,0 +1,1 @@
+cmd_/root/bpf-examples/pure_kprobe_example/kprobe_example.ko := ld -r -m elf_x86_64  --build-id=sha1  -T scripts/module.lds -o /root/bpf-examples/pure_kprobe_example/kprobe_example.ko /root/bpf-examples/pure_kprobe_example/kprobe_example.o /root/bpf-examples/pure_kprobe_example/kprobe_example.mod.o;  true

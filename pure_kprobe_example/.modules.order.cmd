@@ -1,0 +1,1 @@
+cmd_/root/bpf-examples/pure_kprobe_example/modules.order := {   echo /root/bpf-examples/pure_kprobe_example/kprobe_example.ko; :; } | awk '!x[$$0]++' - > /root/bpf-examples/pure_kprobe_example/modules.order
