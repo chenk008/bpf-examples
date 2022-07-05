@@ -21,6 +21,7 @@ int BPF_PROG(read_exit, struct pt_regs *regs, long ret)
 
     // 3. Overwrite
     // char payload[]="";
+    // fexit 不支持 bpf_probe_write_user
     // bpf_probe_write_user(
     //     PT_REGS_PARM2(regs), &payload, sizeof(payload));
     

@@ -19,7 +19,8 @@ struct sock_key {
 
 
 // 当 attach 了这段程序的 socket 上有 sendmsg 系统调用时，内核就会执行这段代码
-__section("sk_msg") // 加载目标文件（ELF ）中的 `sk_msg` section，`sendmsg` 系统调用时触发执行
+// 对于section("sk_msg")，内核代码：sock_map_get_from_fd -》sock_map_prog_update -》 psock_set_prog
+__section("sk_msg")
 int bpf_redir(struct sk_msg_md *msg)
 {
     struct sock_key key = {};
