@@ -1,0 +1,1 @@
+cmd_/root/bpf-examples/modules/print_super_block/modules.order := {   echo /root/bpf-examples/modules/print_super_block/print_sb.ko; :; } | awk '!x[$$0]++' - > /root/bpf-examples/modules/print_super_block/modules.order

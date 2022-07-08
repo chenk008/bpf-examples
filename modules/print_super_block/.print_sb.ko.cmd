@@ -1,0 +1,1 @@
+cmd_/root/bpf-examples/modules/print_super_block/print_sb.ko := ld -r -m elf_x86_64  --build-id=sha1  -T scripts/module.lds -o /root/bpf-examples/modules/print_super_block/print_sb.ko /root/bpf-examples/modules/print_super_block/print_sb.o /root/bpf-examples/modules/print_super_block/print_sb.mod.o;  true
