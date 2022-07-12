@@ -26,8 +26,12 @@ MODULE_INFO(retpoline, "Y");
 static const struct modversion_info ____versions[]
 __used __section("__versions") = {
 	{ 0x1a4128f6, "module_layout" },
-	{ 0xba8fbd64, "_raw_spin_lock" },
-	{ 0xe007de41, "kallsyms_lookup_name" },
+	{ 0x8e29f2c9, "param_ops_uint" },
+	{ 0x92540fbf, "finish_wait" },
+	{ 0x1000e51, "schedule" },
+	{ 0x8c26d495, "prepare_to_wait_event" },
+	{ 0xfe487975, "init_wait_entry" },
+	{ 0xd9a5ea54, "__init_waitqueue_head" },
 	{ 0xc5850110, "printk" },
 	{ 0xbdfb6dbb, "__fentry__" },
 };
@@ -35,4 +39,4 @@ __used __section("__versions") = {
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "9DA09375438CB4EEBB31B48");
+MODULE_INFO(srcversion, "46F1E33A5783943C6D09A30");

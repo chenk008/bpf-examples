@@ -1,0 +1,1 @@
+cmd_/root/bpf-examples/modules/d_process/Module.symvers := sed 's/ko$$/o/' /root/bpf-examples/modules/d_process/modules.order | scripts/mod/modpost -m -a   -o /root/bpf-examples/modules/d_process/Module.symvers -e -i Module.symvers   -T -

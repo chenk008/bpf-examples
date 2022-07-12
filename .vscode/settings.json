@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "chrono": "c",
+        "algorithm": "c",
+        "mount.h": "c",
+        "fs.h": "c",
+        "module.h": "c",
+        "kdev_t.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
+}

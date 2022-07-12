@@ -1,0 +1,1 @@
+cmd_/root/bpf-examples/modules/deadlock/Module.symvers := sed 's/ko$$/o/' /root/bpf-examples/modules/deadlock/modules.order | scripts/mod/modpost -m -a   -o /root/bpf-examples/modules/deadlock/Module.symvers -e -i Module.symvers   -T -

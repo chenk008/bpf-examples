@@ -26,13 +26,17 @@ MODULE_INFO(retpoline, "Y");
 static const struct modversion_info ____versions[]
 __used __section("__versions") = {
 	{ 0x1a4128f6, "module_layout" },
-	{ 0xba8fbd64, "_raw_spin_lock" },
-	{ 0xe007de41, "kallsyms_lookup_name" },
-	{ 0xc5850110, "printk" },
+	{ 0xf50de4ed, "wake_up_process" },
+	{ 0x9112cd34, "kthread_create_on_node" },
+	{ 0x977f511b, "__mutex_init" },
+	{ 0x91ae7954, "kmem_cache_alloc_trace" },
+	{ 0xcfd2f6b6, "kmalloc_caches" },
+	{ 0xf9a482f9, "msleep" },
+	{ 0x2ab7989d, "mutex_lock" },
 	{ 0xbdfb6dbb, "__fentry__" },
 };
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "9DA09375438CB4EEBB31B48");
+MODULE_INFO(srcversion, "246D06F63A8039BB6198FEC");

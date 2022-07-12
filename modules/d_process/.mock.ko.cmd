@@ -1,0 +1,1 @@
+cmd_/root/bpf-examples/modules/d_process/mock.ko := ld -r -m elf_x86_64  --build-id=sha1  -T scripts/module.lds -o /root/bpf-examples/modules/d_process/mock.ko /root/bpf-examples/modules/d_process/mock.o /root/bpf-examples/modules/d_process/mock.mod.o;  true
