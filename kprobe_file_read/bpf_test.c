@@ -1,5 +1,6 @@
 #define __x86_64__
 //#include <bpf/bpf.h>
+#include "my.h"
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 
@@ -30,6 +31,14 @@ int my_memcmp(const void *buffer1,const void *buffer2,int count)
 
 }
 
+struct bpf_map_def SEC("maps") comm = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(struct procName),
+    .value_size = sizeof(int),
+    .max_entries = 100,
+    .map_flags = BPF_F_NO_PREALLOC,
+};
+
 struct bpf_map_def SEC("maps") written = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(int),
@@ -41,12 +50,24 @@ struct bpf_map_def SEC("maps") written = {
 SEC("kprobe/__x64_sys_read")
 int kprobe_sys_read(struct pt_regs *ctx)
 {
-    
-    char TARGET_NAME[]="kubelet";
-    char comm[TASK_COMM_LEN];
-    bpf_get_current_comm(&comm, sizeof(comm));
-    if (my_memcmp(comm, TARGET_NAME, sizeof(TARGET_NAME)))
+    struct procName pn;
+    bpf_get_current_comm(&pn.name, sizeof(pn.name));
+
+    char TARGET_NAME[]="sshd";
+    if (!my_memcmp(pn.name, TARGET_NAME, sizeof(TARGET_NAME)))
         return 0;
+    char TARGET_NAME1[]="kubectl";
+    // strcpy(TARGET_NAME,"cat");
+    if (my_memcmp(pn.name, TARGET_NAME1, sizeof(TARGET_NAME1)))
+        return 0;
+    
+    int *i = bpf_map_lookup_elem(&comm, &pn);
+    if (!i){
+        bpf_printk("skip %s\n", pn.name);
+        return 0;
+    }
+
+    
 
     int pid = bpf_get_current_pid_tgid() >> 32;
     int *my_written = bpf_map_lookup_elem(&written, &pid);
