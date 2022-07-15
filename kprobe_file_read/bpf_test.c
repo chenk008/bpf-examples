@@ -53,13 +53,13 @@ int kprobe_sys_read(struct pt_regs *ctx)
     struct procName pn;
     bpf_get_current_comm(&pn.name, sizeof(pn.name));
 
-    char TARGET_NAME[]="sshd";
-    if (!my_memcmp(pn.name, TARGET_NAME, sizeof(TARGET_NAME)))
-        return 0;
-    char TARGET_NAME1[]="kubectl";
-    // strcpy(TARGET_NAME,"cat");
-    if (my_memcmp(pn.name, TARGET_NAME1, sizeof(TARGET_NAME1)))
-        return 0;
+    // char TARGET_NAME[]="sshd";
+    // if (!my_memcmp(pn.name, TARGET_NAME, sizeof(TARGET_NAME)))
+    //     return 0;
+
+    // char TARGET_NAME1[]="kubectl";
+    // if (my_memcmp(pn.name, TARGET_NAME1, sizeof(TARGET_NAME1)))
+    //     return 0;
     
     int *i = bpf_map_lookup_elem(&comm, &pn);
     if (!i){

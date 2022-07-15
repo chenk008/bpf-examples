@@ -5,7 +5,11 @@
         "mount.h": "c",
         "fs.h": "c",
         "module.h": "c",
-        "kdev_t.h": "c"
+        "kdev_t.h": "c",
+        "bpf_helpers.h": "c",
+        "bpf_load.h": "c",
+        "bpf.h": "c",
+        "my.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

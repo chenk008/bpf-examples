@@ -2,3 +2,4 @@ bak
 
 *.o
 bpf_helpers.h
+.vscode
