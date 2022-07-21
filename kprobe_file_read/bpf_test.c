@@ -63,7 +63,7 @@ int kprobe_sys_read(struct pt_regs *ctx)
     
     int *i = bpf_map_lookup_elem(&comm, &pn);
     if (!i){
-        bpf_printk("skip %s\n", pn.name);
+        // bpf_printk("skip %s\n", pn.name);
         return 0;
     }
 
