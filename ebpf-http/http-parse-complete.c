@@ -1,5 +1,6 @@
 #include <uapi/linux/ptrace.h>
 #include <net/sock.h>
+// #include <arpa/inet.h>
 #include <bcc/proto.h>
 
 #define IP_TCP 	6   
@@ -54,7 +55,7 @@ int http_filter(struct __sk_buff *skb) {
 	u32  payload_offset = 0;
 	u32  payload_length = 0;
 	struct Key 	key;
-	struct Leaf zero = {0};
+	struct Leaf zero = {1};
 
 	struct tcp_t *tcp = cursor_advance(cursor, sizeof(*tcp));
 
@@ -64,6 +65,9 @@ int http_filter(struct __sk_buff *skb) {
 	key.src_ip = ip->src;
 	key.dst_port = tcp->dst_port;
 	key.src_port = tcp->src_port;
+
+	// bpf_trace_printk("src ip:%d",ip->src);
+
 
 	//calculate ip header length
 	//value to multiply * 4
@@ -89,7 +93,7 @@ int http_filter(struct __sk_buff *skb) {
 
 	//load firt 7 byte of payload into p (payload_array)
 	//direct access to skb not allowed
-	unsigned long p[7];
+	unsigned long p[7] = {0};
 	int i = 0;
 	int j = 0;
 	for (i = payload_offset ; i < (payload_offset + 7) ; i++) {
@@ -102,7 +106,7 @@ int http_filter(struct __sk_buff *skb) {
 	if ((p[0] == 'H') && (p[1] == 'T') && (p[2] == 'T') && (p[3] == 'P')) {
 		goto HTTP_MATCH;
 	}
-	//GET
+	// GET
 	if ((p[0] == 'G') && (p[1] == 'E') && (p[2] == 'T')) {
 		goto HTTP_MATCH;
 	}
@@ -127,6 +131,11 @@ int http_filter(struct __sk_buff *skb) {
 	//check if packet belong to an HTTP session
 	struct Leaf * lookup_leaf = sessions.lookup(&key);
 	if(lookup_leaf) {
+		// char *xpack_saddr = inet_ntoa(ip->src);
+		bpf_trace_printk("src ip:%d,%d",ip->src,lookup_leaf->timestamp);
+		if (lookup_leaf->timestamp == 1){
+			goto DROP;
+		}
 		//send packet to userspace
 		goto KEEP;
 	}
@@ -143,6 +152,6 @@ int http_filter(struct __sk_buff *skb) {
 
 	//drop the packet returning 0
 	DROP:
-	return 0;
+	return 1;
 
 }

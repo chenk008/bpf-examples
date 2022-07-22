@@ -29,17 +29,17 @@ CLEANUP_N_PACKETS  = 50       #run cleanup every CLEANUP_N_PACKETS packets recei
 MAX_URL_STRING_LEN = 8192     #max url string len (usually 8K)
 MAX_AGE_SECONDS    = 30       #max age entry in bpf_sessions map
 
-#convert a bin string into a string of hex char
-#helper function to print raw packet in hex
-def toHex(s):
-    lst = []
-    for ch in s:
-        hv = hex(ord(ch)).replace('0x', '')
-        if len(hv) == 1:
-            hv = '0'+hv
-        lst.append(hv)
-    
-    return reduce(lambda x,y:x+y, lst)
+def getLocalIp():
+  s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  s.settimeout(0)
+  try:
+    s.connect(('10.254.254.254', 1))
+    IP = s.getsockname()[0]
+  except Exception:
+    IP = '127.0.0.1'
+  finally:
+    s.close()
+  return IP
 
 #print str until CR+LF
 def printUntilCRLF(str):
@@ -113,8 +113,14 @@ if len(argv) > 3:
 
 print ("binding socket to '%s'" % interface)
 
+
 # initialize BPF - load source code from http-parse-complete.c
-bpf = BPF(src_file = "http-parse-complete.c",debug = 0)
+# bpf = BPF(src_file = "http-parse-complete.c",debug = 0x4,cflags=["-I/usr/include"])
+bpf = BPF(src_file = "http-parse-complete.c",debug = 0x4,cflags=[""])
+
+
+ip = getLocalIp()
+print ("local ip to '%s'" % ip)
 
 #load eBPF program http_filter of type SOCKET_FILTER into the kernel eBPF vm
 #more info about eBPF program types
@@ -148,6 +154,7 @@ while 1:
   #retrieve raw packet from socket
   packet_str = os.read(socket_fd,4096) #set packet length to max packet length on the interface
   packet_count += 1
+  # print(packet_str)
 
   #DEBUG - print raw packet in hex format
   #packet_hex = toHex(packet_str)
@@ -155,6 +162,7 @@ while 1:
 
   #convert packet into bytearray
   packet_bytearray = bytearray(packet_str)
+  # print(packet_bytearray)
   
   #ethernet header length
   ETH_HLEN = 14 
@@ -184,12 +192,19 @@ while 1:
   ip_header_length = ip_header_length << 2                    #shift to obtain length
 
   #retrieve ip source/dest
-  ip_src_str = packet_str[ETH_HLEN+12:ETH_HLEN+16]                #ip source offset 12..15
-  ip_dst_str = packet_str[ETH_HLEN+16:ETH_HLEN+20]                #ip dest   offset 16..19
+  ip_src_bytes = packet_str[ETH_HLEN+12:ETH_HLEN+16]                #ip source offset 12..15
+  ip_dst_bytes = packet_str[ETH_HLEN+16:ETH_HLEN+20]                #ip dest   offset 16..19
 
-  ip_src = int(toHex(ip_src_str),16)
-  ip_dst = int(toHex(ip_dst_str),16)
-  
+  line4 = struct.unpack('>4s', ip_src_bytes)
+  ip_src = socket.inet_ntoa(line4[0])
+  # print("src_ip:{},{}".format(ip_src,ip_src == ip))
+  need_filter=ip_src == ip
+
+  line4 = struct.unpack('>4s', ip_dst_bytes)
+  ip_dst = socket.inet_ntoa(line4[0])
+  # print("ip_dst:{}".format(ip_dst))
+
+
   #TCP HEADER 
   #https://www.rfc-editor.org/rfc/rfc793.txt
   #  12              13              14              15  
@@ -211,11 +226,9 @@ while 1:
   tcp_header_length = tcp_header_length >> 2                              #SHR 4 ; SHL 2 -> SHR 2
   
   #retrieve port source/dest
-  port_src_str = packet_str[ETH_HLEN+ip_header_length:ETH_HLEN+ip_header_length+2]
-  port_dst_str = packet_str[ETH_HLEN+ip_header_length+2:ETH_HLEN+ip_header_length+4]
+  port_src_bytes = packet_str[ETH_HLEN+ip_header_length:ETH_HLEN+ip_header_length+2]
+  port_dst_bytes = packet_str[ETH_HLEN+ip_header_length+2:ETH_HLEN+ip_header_length+4]
   
-  port_src = int(toHex(port_src_str),16)
-  port_dst = int(toHex(port_dst_str),16)
 
   #calculate payload offset
   payload_offset = ETH_HLEN + ip_header_length + tcp_header_length
@@ -223,26 +236,47 @@ while 1:
   #payload_string contains only packet payload
   payload_string = packet_str[(payload_offset):(len(packet_bytearray))]
 
+  
   #CR + LF (substring to find)
-  crlf = "\r\n"
+  crlf = b"\r\n"
 
   #current_Key contains ip source/dest and port source/map
   #useful for direct bpf_sessions map access
-  current_Key = bpf_sessions.Key(ip_src,ip_dst,port_src,port_dst)
+  current_Key = bpf_sessions.Key(int.from_bytes(ip_src_bytes, "big"),int.from_bytes(ip_dst_bytes, "big"),int.from_bytes(port_src_bytes, "big"),int.from_bytes(port_dst_bytes, "big"))
 
+  # print("payload_string:{},{}".format(payload_string[:3], payload_string[:3] == b"GET"))
+
+  if (ip_src == "100.100.100.200"):
+    printUntilCRLF(payload_string)
+    
   #looking for HTTP GET/POST request
-  if ((payload_string[:3] == "GET") or (payload_string[:4] == "POST")   or (payload_string[:4] == "HTTP")  \
-  or ( payload_string[:3] == "PUT") or (payload_string[:6] == "DELETE") or (payload_string[:4] == "HEAD") ):
+  if ((payload_string[:3] == b"GET") or (payload_string[:4] == b"POST")   or (payload_string[:4] == b"HTTP") \
+      or (payload_string[:3] == b"PUT") or (payload_string[:6] == b"DELETE") or (payload_string[:4] == b"HEAD") ):
     #match: HTTP GET/POST packet found
-    if (crlf in payload_string):
+    # print("trigger payload_string:{}".format(payload_string[:3]))
+
+    if (crlf in payload_string and b"/latest/meta-data/region-id" in payload_string):
       #url entirely contained in first packet -> print it all
       printUntilCRLF(payload_string)
 
       #delete current_Key from bpf_sessions, url already printed. current session not useful anymore 
-      try:
-        del bpf_sessions[current_Key]
-      except:
-        print ("error during delete from bpf map ")
+      if need_filter:
+      #clean bpf_sessions & local_dictionary
+        try:
+          print("need_filter:{},{},{}".format(ip_dst, int.from_bytes(port_dst_bytes, "big"),int.from_bytes(port_src_bytes, "big")))
+          print("need_filter:{},{}".format(ip_dst, int.from_bytes(ip_dst_bytes, "big")))
+
+          reverse_Key = bpf_sessions.Key(int.from_bytes(ip_dst_bytes, "big"),int.from_bytes(ip_src_bytes, "big"),int.from_bytes(port_dst_bytes, "big"),int.from_bytes(port_src_bytes, "big"))
+          leaf = bpf_sessions.Leaf(1)
+          bpf_sessions.update(reverse_Key,leaf)
+        except Exception as e:
+          print ("error update map:{}".format(e))
+      else:
+        try:
+          # del bpf_sessions[current_Key]
+          del local_dictionary[binascii.hexlify(current_Key)]
+        except:
+          print ("error deleting from map or dictionary")
     else: 
       #url NOT entirely contained in first packet   
       #not found \r\n in payload. 
@@ -264,13 +298,22 @@ while 1:
           #append current payload
           prev_payload_string += payload_string
           #print HTTP GET/POST url 
-          printUntilCRLF(prev_payload_string)
+          # printUntilCRLF(prev_payload_string)
+
+          if need_filter:
           #clean bpf_sessions & local_dictionary
-          try:
-            del bpf_sessions[current_Key]
-            del local_dictionary[binascii.hexlify(current_Key)]
-          except:
-            print ("error deleting from map or dictionary")
+            try:
+              reverse_Key = bpf_sessions.Key(int.from_bytes(port_src_bytes, "big"),int.from_bytes(port_dst_bytes, "big"),int.from_bytes(ip_src_bytes, "big"),int.from_bytes(ip_dst_bytes, "big"))
+              bpf_sessions[reverse_Key]=1
+              print("update map{}".format_map(ip_src))
+            except:
+              print ("error deleting from map or dictionary")
+          else:
+            try:
+              del bpf_sessions[current_Key]
+              del local_dictionary[binascii.hexlify(current_Key)]
+            except:
+              print ("error deleting from map or dictionary")
         else:
           #NOT last packet. containing part of HTTP GET/POST url splitted in N packets.
           #append current payload
