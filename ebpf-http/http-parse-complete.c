@@ -208,22 +208,26 @@ int xdp_prog1(struct xdp_md *ctx)
 		{
 			if (ip->protocol == IPPROTO_TCP)
 			{
+		// 		bpf_trace_printk("src: %llu, dst: %llu, proto: %u\n",
+		//    ether_addr_to_u64(eth->h_source),
+		//    ether_addr_to_u64(eth->h_dest),
+		//    bpf_ntohs(eth->h_proto));
 				struct tcphdr *tcp = (void *)ip + sizeof(*ip);
 				if ((void *)tcp + sizeof(*tcp) <= data_end)
 				{
 					struct Key key;
-					key.dst_ip = ip->daddr;
-					key.src_ip = ip->saddr;
-					key.dst_port = tcp->dest;
-					key.src_port = tcp->source;
-					bpf_trace_printk("xdp got src ip:%d", htons(ip->daddr));
+					key.dst_ip = bpf_ntohl(ip->daddr);
+					key.src_ip = bpf_ntohl(ip->saddr);
+					key.dst_port = bpf_ntohs(tcp->dest);
+					key.src_port = bpf_ntohs(tcp->source);
+					bpf_trace_printk("xdp got, src ip:%d, src port:%d, dst port:%d", key.src_ip, key.src_port, key.dst_port);
 					struct Leaf *lookup_leaf = sessions.lookup(&key);
 					if (lookup_leaf)
 					{
 						// char *xpack_saddr = inet_ntoa(ip->src);
-						bpf_trace_printk("xdp drop src ip:%d,%d", ip->daddr, lookup_leaf->timestamp);
 						if (lookup_leaf->timestamp == 1)
 						{
+							bpf_trace_printk("xdp drop src ip:%d,%d", key.src_ip, key.src_port);
 							return XDP_DROP;
 						}
 					}

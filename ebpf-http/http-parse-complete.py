@@ -141,7 +141,7 @@ def main(argv):
 
   # initialize BPF - load source code from http-parse-complete.c
   # bpf = BPF(src_file = "http-parse-complete.c",debug = 0x4,cflags=["-I/usr/include"])
-  bpf = BPF(src_file = "http-parse-complete.c",debug = 0x4,cflags=[""])
+  bpf = BPF(src_file = "http-parse-complete.c",debug = 0,cflags=[""])
 
   xdp_fn = bpf.load_func("xdp_prog1", BPF.XDP, None)
   bpf.attach_xdp(target_interface, xdp_fn, 3)
