@@ -177,6 +177,8 @@ def main(argv):
   #if url is not entirely contained in only one packet, save the firt part of it in this local dict
   #when I find \r\n in a next pkt, append and print all the url
   local_dictionary = {}
+  threshold_url = b"/latest/meta-data/region-id"
+  threshold_cnt = 5
 
   while 1:
     #retrieve raw packet from socket
@@ -286,11 +288,12 @@ def main(argv):
       #match: HTTP GET/POST packet found
       # print("trigger payload_string:{}".format(payload_string[:3]))
 
-      if (crlf in payload_string and b"/latest/meta-data/region-id" in payload_string):
+      if (crlf in payload_string and threshold_url in payload_string):
         #url entirely contained in first packet -> print it all
+        threshold_cnt -= 1
 
         #delete current_Key from bpf_sessions, url already printed. current session not useful anymore 
-        if need_filter:
+        if need_filter and threshold_cnt > 0:
         #clean bpf_sessions & local_dictionary
           try:
 
