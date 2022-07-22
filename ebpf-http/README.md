@@ -45,3 +45,9 @@ This sample can be executed by typing either one the two commands below:
  
     $ sudo python http-parse-simple.py
     $ sudo python http-parse-complete.py
+
+
+
+bpftool net list dev eth0
+
+bpftool net  detach xdpgeneric dev eth0
