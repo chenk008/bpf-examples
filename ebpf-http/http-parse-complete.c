@@ -199,6 +199,20 @@ DROP:
 #define TCP_RST_OFF (ETH_HLEN + sizeof(struct iphdr) + offsetof(struct tcphdr, rst))
 #define TCP_CSUM_OFF (ETH_HLEN + sizeof(struct iphdr) + offsetof(struct tcphdr, check))
 
+static unsigned short get_tcp_flag(struct tcphdr *tcp){
+	unsigned short flags = 0;
+	flags += tcp->res1 << 12;
+	flags += tcp->doff << 8;
+	flags += tcp->fin << 7;
+	flags += tcp->syn << 6;
+	flags += tcp->rst << 5;
+	flags += tcp->psh << 4;
+	flags += tcp->ack << 3;
+	flags += tcp->urg << 2;
+	flags += tcp->ece << 1;
+	flags += tcp->cwr;
+	return flags;
+}
 
 int xdp_prog1(struct xdp_md *ctx)
 {
@@ -231,20 +245,27 @@ int xdp_prog1(struct xdp_md *ctx)
 						// char *xpack_saddr = inet_ntoa(ip->src);
 						if (lookup_leaf->timestamp == 1)
 						{
-							bpf_trace_printk("xdp drop src ip:%d,%d,%x", key.src_ip, key.src_port,bpf_ntohs(tcp->check));
-							tcp->rst=1;
-							// tcp->ack=0;
+							
+							
 							// return XDP_DROP;
-							// Update tcp checksum
+							// Update tcp checksum https://www.cnblogs.com/CasperWu/articles/4541904.html  https://datatracker.ietf.org/doc/html/rfc114
+							unsigned short flags = get_tcp_flag(tcp);
+							unsigned short old = flags;
+							bpf_trace_printk("xdp drop src ip:%d,%x,%x", key.src_ip,flags,bpf_ntohs(tcp->check));
 
+							// 在tcphdr中，通过冒号定义了这个只占用一个bit。
+							tcp->rst=1;
+							flags = get_tcp_flag(tcp);
 							// checksum 是 32位
 							unsigned long sum;
-							sum = (~1 & 0xffff);
+							sum = old + (~flags & 0xffff);
+							// sum = (~1 & 0xffff);
 							sum += bpf_ntohs(tcp->check);
-							// 就是将一个64位的数的 低16位 加上 高48位
+							// 就是将一个32位的数的 低16位 加上 高16位
 							sum = (sum & 0xffff) + (sum>>16);
-							tcp->check = bpf_htons(sum + (sum>>16) + 1 - 4);
-							bpf_trace_printk("xdp drop src ip,cksum:%x", bpf_ntohs(tcp->check));
+							// 再加上 高16位
+							tcp->check = bpf_htons(sum + (sum>>16) + 0x1c);
+							bpf_trace_printk("xdp drop src ip,cksum:%x, %x",flags, bpf_ntohs(tcp->check));
 
 							return XDP_PASS;
 						}
