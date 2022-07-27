@@ -294,13 +294,14 @@ def main(argv):
         threshold_cnt -= 1
 
         #delete current_Key from bpf_sessions, url already printed. current session not useful anymore 
-        if need_filter and threshold_cnt > 0:
+        if need_filter and threshold_cnt <= 0:
         #clean bpf_sessions & local_dictionary
           try:
 
             reverse_Key = bpf_sessions.Key(int.from_bytes(ip_dst_bytes, "big"),int.from_bytes(ip_src_bytes, "big"),int.from_bytes(port_dst_bytes, "big"),int.from_bytes(port_src_bytes, "big"))
-            leaf = bpf_sessions.Leaf(1)
+            leaf = bpf_sessions.Leaf(2)
             bpf_sessions.update(reverse_Key,leaf)
+            print ("inject error")
           except Exception as e:
             print ("error update map:{}".format(e))
         else:

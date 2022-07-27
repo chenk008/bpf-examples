@@ -66,7 +66,7 @@ int http_filter(struct __sk_buff *skb)
 	u32 payload_offset = 0;
 	u32 payload_length = 0;
 	struct Key key;
-	struct Leaf zero = {2};
+	struct Leaf zero = {1};
 
 	struct tcp_t *tcp = cursor_advance(cursor, sizeof(*tcp));
 
@@ -243,7 +243,7 @@ int xdp_prog1(struct xdp_md *ctx)
 					if (lookup_leaf)
 					{
 						// char *xpack_saddr = inet_ntoa(ip->src);
-						if (lookup_leaf->timestamp == 1)
+						if (lookup_leaf->timestamp == 2)
 						{
 							
 							
