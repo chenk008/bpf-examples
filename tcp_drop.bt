@@ -1,0 +1,39 @@
+#include <linux/path.h>
+#include <net/sock.h>
+#include <linux/tcp.h>
+
+//19:50:25, 4227858442,3362022500,10.0.0.252, 100.100.100.200,
+
+kretfunc:tcp_validate_incoming { 
+    $s = (struct sock *) args->sk;
+    $saddr = $s->__sk_common.skc_rcv_saddr;
+    $daddr = $s->__sk_common.skc_daddr;
+    if ($daddr == 3362022500){
+        printf("tcp_validate_incoming %s, %s, %s, %d, %s\n",strftime("%H:%M:%S", nsecs),ntop($saddr),ntop($daddr),retval,kstack);
+    }
+}
+
+
+kretfunc:tcp_rcv_established { 
+    $s = (struct sock *) args->sk;
+    $saddr = $s->__sk_common.skc_rcv_saddr;
+    $daddr = $s->__sk_common.skc_daddr;
+    $skb = (struct sk_buff *) args->skb;
+    $th = (struct tcphdr *)$skb->data;
+    if ($daddr == 3362022500){
+        printf("tcp_rcv_established %s, %s, %s, %d, %s\n",strftime("%H:%M:%S", nsecs),ntop($saddr),ntop($daddr),$th->rst,kstack);
+    }
+}
+
+
+kretfunc:__skb_checksum_complete{ 
+    $skb = (struct sk_buff *) args->skb;
+    $th = (struct tcphdr *)$skb->data;
+
+    $s = (struct sock *) $skb->sk;
+    $saddr = $s->__sk_common.skc_rcv_saddr;
+    $daddr = $s->__sk_common.skc_daddr;
+    if ($daddr == 3362022500){
+        printf("__skb_checksum_complete %s, %s, %s, %d, %s\n",strftime("%H:%M:%S", nsecs),ntop($saddr),ntop($daddr),retval,kstack);
+    }
+}

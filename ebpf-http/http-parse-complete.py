@@ -279,7 +279,8 @@ def main(argv):
     if (ip_src != "100.100.100.200" and ip_dst!= "100.100.100.200"):
       continue
 
-    print("header info, dst_ip:{},src_port:{},dst_ip:{}".format(ip_dst,int.from_bytes(port_src_bytes, "big"),int.from_bytes(ip_dst_bytes, "big")))
+    localtime = time.asctime( time.localtime(time.time()) )
+    print("{} header info, dst_ip:{},src_port:{},dst_ip:{}".format(localtime, ip_dst,int.from_bytes(port_src_bytes, "big"),int.from_bytes(ip_dst_bytes, "big")))
     printUntilCRLF(payload_string)
 
     #looking for HTTP GET/POST request

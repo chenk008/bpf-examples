@@ -193,8 +193,12 @@ DROP:
 
 #define SEC(NAME) __attribute__((section(NAME), used))
 
-#define htons(x) ((__be16)___constant_swab16((x)))
-#define htonl(x) ((__be32)___constant_swab32((x)))
+// #define htons(x) ((__be16)___constant_swab16((x)))
+// #define htonl(x) ((__be32)___constant_swab32((x)))
+
+#define TCP_RST_OFF (ETH_HLEN + sizeof(struct iphdr) + offsetof(struct tcphdr, rst))
+#define TCP_CSUM_OFF (ETH_HLEN + sizeof(struct iphdr) + offsetof(struct tcphdr, check))
+
 
 int xdp_prog1(struct xdp_md *ctx)
 {
@@ -220,15 +224,29 @@ int xdp_prog1(struct xdp_md *ctx)
 					key.src_ip = bpf_ntohl(ip->saddr);
 					key.dst_port = bpf_ntohs(tcp->dest);
 					key.src_port = bpf_ntohs(tcp->source);
-					bpf_trace_printk("xdp got, src ip:%d, src port:%d, dst port:%d", key.src_ip, key.src_port, key.dst_port);
+					// bpf_trace_printk("xdp got, src ip:%d, src port:%d, dst port:%d", key.src_ip, key.src_port, key.dst_port);
 					struct Leaf *lookup_leaf = sessions.lookup(&key);
 					if (lookup_leaf)
 					{
 						// char *xpack_saddr = inet_ntoa(ip->src);
 						if (lookup_leaf->timestamp == 1)
 						{
-							bpf_trace_printk("xdp drop src ip:%d,%d", key.src_ip, key.src_port);
-							return XDP_DROP;
+							bpf_trace_printk("xdp drop src ip:%d,%d,%x", key.src_ip, key.src_port,bpf_ntohs(tcp->check));
+							tcp->rst=1;
+							// tcp->ack=0;
+							// return XDP_DROP;
+							// Update tcp checksum
+
+							// checksum 是 32位
+							unsigned long sum;
+							sum = (~1 & 0xffff);
+							sum += bpf_ntohs(tcp->check);
+							// 就是将一个64位的数的 低16位 加上 高48位
+							sum = (sum & 0xffff) + (sum>>16);
+							tcp->check = bpf_htons(sum + (sum>>16) + 1 - 4);
+							bpf_trace_printk("xdp drop src ip,cksum:%x", bpf_ntohs(tcp->check));
+
+							return XDP_PASS;
 						}
 					}
 				}

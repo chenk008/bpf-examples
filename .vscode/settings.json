@@ -9,7 +9,10 @@
         "bpf_helpers.h": "c",
         "bpf_load.h": "c",
         "bpf.h": "c",
-        "my.h": "c"
+        "my.h": "c",
+        "inet.h": "c",
+        "ipv6.h": "c",
+        "udp.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

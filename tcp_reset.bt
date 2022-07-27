@@ -1,0 +1,8 @@
+#include <linux/path.h>
+#include <net/sock.h>
+
+
+kprobe:tcp_reset { 
+        $s = (struct sock *) arg0;
+	printf("%s, %lu,%lu,%s, %s, %s\n",strftime("%H:%M:%S", nsecs),$s->__sk_common.skc_rcv_saddr, $s->__sk_common.skc_daddr,ntop($s->__sk_common.skc_rcv_saddr),ntop($s->__sk_common.skc_daddr),kstack);
+}
