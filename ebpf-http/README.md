@@ -51,3 +51,5 @@ This sample can be executed by typing either one the two commands below:
 bpftool net list dev eth0
 
 bpftool net  detach xdpgeneric dev eth0
+
+tcpdump src host 100.100.100.200  -v -X -i eth0

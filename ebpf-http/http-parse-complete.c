@@ -199,21 +199,29 @@ DROP:
 #define TCP_RST_OFF (ETH_HLEN + sizeof(struct iphdr) + offsetof(struct tcphdr, rst))
 #define TCP_CSUM_OFF (ETH_HLEN + sizeof(struct iphdr) + offsetof(struct tcphdr, check))
 
-static unsigned short get_tcp_flag(struct tcphdr *tcp){
+static unsigned short get_tcp_flag(struct tcphdr *tcp)
+{
 	unsigned short flags = 0;
-	flags += tcp->res1 << 12;
-	flags += tcp->doff << 8;
-	flags += tcp->fin << 7;
-	flags += tcp->syn << 6;
-	flags += tcp->rst << 5;
-	flags += tcp->psh << 4;
-	flags += tcp->ack << 3;
-	flags += tcp->urg << 2;
-	flags += tcp->ece << 1;
-	flags += tcp->cwr;
+	flags += tcp->res1 << 8;
+	flags += tcp->doff << 12;
+	flags += tcp->urg << 5;
+	flags += tcp->ack << 4;
+	flags += tcp->psh << 3;
+	flags += tcp->rst << 2;
+	flags += tcp->syn << 1;
+	flags += tcp->fin;
 	return flags;
 }
+static unsigned short csum_incremental_update_modified(unsigned short old_csum,
+													   unsigned short old_field,
+													   unsigned short new_field)
 
+{
+	unsigned long csum = (~old_csum & 0xFFFF) + (~old_field & 0xFFFF) + new_field;
+	csum = (csum >> 16) + (csum & 0xFFFF);
+	csum += (csum >> 16);
+	return ~csum;
+}
 int xdp_prog1(struct xdp_md *ctx)
 {
 	void *data = (void *)(long)ctx->data;
@@ -226,10 +234,10 @@ int xdp_prog1(struct xdp_md *ctx)
 		{
 			if (ip->protocol == IPPROTO_TCP)
 			{
-		// 		bpf_trace_printk("src: %llu, dst: %llu, proto: %u\n",
-		//    ether_addr_to_u64(eth->h_source),
-		//    ether_addr_to_u64(eth->h_dest),
-		//    bpf_ntohs(eth->h_proto));
+				// 		bpf_trace_printk("src: %llu, dst: %llu, proto: %u\n",
+				//    ether_addr_to_u64(eth->h_source),
+				//    ether_addr_to_u64(eth->h_dest),
+				//    bpf_ntohs(eth->h_proto));
 				struct tcphdr *tcp = (void *)ip + sizeof(*ip);
 				if ((void *)tcp + sizeof(*tcp) <= data_end)
 				{
@@ -245,27 +253,28 @@ int xdp_prog1(struct xdp_md *ctx)
 						// char *xpack_saddr = inet_ntoa(ip->src);
 						if (lookup_leaf->timestamp == 2)
 						{
-							
-							
 							// return XDP_DROP;
 							// Update tcp checksum https://www.cnblogs.com/CasperWu/articles/4541904.html  https://datatracker.ietf.org/doc/html/rfc114
-							unsigned short flags = get_tcp_flag(tcp);
-							unsigned short old = flags;
-							bpf_trace_printk("xdp drop src ip:%d,%x,%x", key.src_ip,flags,bpf_ntohs(tcp->check));
+							unsigned short old_flags = get_tcp_flag(tcp);
+							bpf_trace_printk("xdp drop flags:%d,%d", tcp->res1, tcp->doff);
 
-							// 在tcphdr中，通过冒号定义了这个只占用一个bit。
-							tcp->rst=1;
-							flags = get_tcp_flag(tcp);
-							// checksum 是 32位
-							unsigned long sum;
-							sum = old + (~flags & 0xffff);
-							// sum = (~1 & 0xffff);
-							sum += bpf_ntohs(tcp->check);
-							// 就是将一个32位的数的 低16位 加上 高16位
-							sum = (sum & 0xffff) + (sum>>16);
-							// 再加上 高16位
-							tcp->check = bpf_htons(sum + (sum>>16) + 0x1c);
-							bpf_trace_printk("xdp drop src ip,cksum:%x, %x",flags, bpf_ntohs(tcp->check));
+							bpf_trace_printk("xdp drop src ip:%x,%x,%x", old_flags, bpf_ntohs(tcp->check),tcp->check);
+
+							// 在tcphdr中，通过位域定义了这个只占用一个bit。
+							tcp->rst = 1;
+							unsigned short flags = get_tcp_flag(tcp);
+							tcp->check = bpf_htons(csum_incremental_update_modified(bpf_ntohs(tcp->check),old_flags,flags));
+
+							// // checksum 是 16位
+							// unsigned long sum;
+							// sum = old_flags + (~flags & 0xffff);
+							// sum += bpf_ntohs(tcp->check);
+							// // 就是将一个32位的数的 低16位 加上 高16位
+							// sum = (sum & 0xffff) + (sum >> 16);
+							// // 再加上 高16位
+							// tcp->check = bpf_htons(sum + (sum >> 16) + 0x1c);
+							// 0001 1100
+							bpf_trace_printk("xdp drop src ip,cksum:%x, %x", flags, bpf_ntohs(tcp->check));
 
 							return XDP_PASS;
 						}

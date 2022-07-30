@@ -178,7 +178,7 @@ def main(argv):
   #when I find \r\n in a next pkt, append and print all the url
   local_dictionary = {}
   threshold_url = b"/latest/meta-data/region-id"
-  threshold_cnt = 5
+  threshold_cnt = 1
 
   while 1:
     #retrieve raw packet from socket
