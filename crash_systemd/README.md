@@ -1,3 +1,11 @@
+##异常重现##
+journalctl -fu kubelet
+
+systemctl restart crond
+
+
+
+
 
 ```
 
