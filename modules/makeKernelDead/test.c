@@ -42,6 +42,7 @@ static int multhread_server(void *data)
         index++;
         /*在这里等待事件， 线程被阻塞在这里。 */
         // t_can_run ==1 或者线程需要退出， wait_event就不再阻塞
+        // t_can_run 不是原子读写，因为cpu数据缓存会导致这个线程一直run
         wait_event(wqh, ts->t_can_run || kthread_should_stop());
         printk(KERN_NOTICE "server event over!\n");
         ts->t_can_run = 0;
