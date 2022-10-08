@@ -48,7 +48,7 @@ void read_file(const char *filename, uint8_t** content_ptr, size_t* size_ptr) {
 void setup_regs(VM *vm, size_t entry) {
   struct kvm_regs regs;
   if(ioctl(vm->vcpufd, KVM_GET_REGS, &regs) < 0) pexit("ioctl(KVM_GET_REGS)");
-  regs.rip = entry;
+  regs.rip = entry; //当前指令的地址
   regs.rsp = PS_LIMIT; /* temporary stack */
   regs.rdi = PS_LIMIT; /* start of free pages */
   regs.rsi = MEM_SIZE - regs.rdi; /* total length of free pages */

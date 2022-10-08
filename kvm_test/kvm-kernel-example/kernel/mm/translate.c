@@ -2,17 +2,17 @@
 #include <mm/translate.h>
 #include <utils/panic.h>
 
-/* Maps
+/* Maps 1G内存
  *  0x8000000000 ~ 0x8040000000 -> 0 ~ 0x40000000
  */
 void init_pagetable() {
   uint64_t* pml4;
-  asm("mov %[pml4], cr3" : [pml4]"=r"(pml4));
+  asm("mov %[pml4], cr3" : [pml4]"=r"(pml4)); // save cr3 to pml4
   uint64_t* pdp = (uint64_t*) ((uint64_t) pml4 + 0x3000);
   pml4[1] = PDE64_PRESENT | PDE64_RW | (uint64_t) pdp; // 0x8000000000
   uint64_t* pd = (uint64_t*) ((uint64_t) pdp + 0x1000);
   pdp[0] = PDE64_PRESENT | PDE64_RW | (uint64_t) pd;
-  for(uint64_t i = 0; i < 0x200; i++)
+  for(uint64_t i = 0; i < 0x200; i++)  // 0x200=512, 有512个页表项
     pd[i] = PDE64_PRESENT | PDE64_RW | PDE64_PS | (i * KERNEL_PAGING_SIZE);
 }
 

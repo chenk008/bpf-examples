@@ -9,16 +9,17 @@
 #define MSR_CSTAR 0xc0000083 /* compat mode SYSCALL target */
 #define MSR_SYSCALL_MASK 0xc0000084
 
+// 对于WRMSR 指令：把要写入的信息先存入(RDX：RAX)中，执行写指令后，即可将相应的信息存入ECX 指定的MSR 中。
 int register_syscall() {
   asm(
     "xor rax, rax;"
     "mov rdx, 0x00200008;"
-    "mov ecx, %[msr_star];"
+    "mov ecx, %[msr_star];"  // 为内核和用户注册cs选择器的值
     "wrmsr;"
 
     "mov eax, %[fmask];"
     "xor rdx, rdx;"
-    "mov ecx, %[msr_fmask];"
+    "mov ecx, %[msr_fmask];"  /* MSR_SYSCALL_MASK */
     "wrmsr;"
 
     "lea rax, [rip + syscall_entry];"
@@ -37,12 +38,17 @@ void switch_user(uint64_t argc, char *argv[]) {
   /* temporary area for putting user-accessible data */
   char *s = kmalloc(total_len, MALLOC_PAGE_ALIGN);
   uint64_t sp = physical(s);
+
+  // 写入page table
   add_trans_user((void*) sp, (void*) sp, PROT_RW); /* sp is page aligned */
 
   /* copy strings and argv onto user-accessible area */
   for(int i = 0; i < argc; i++)
     argv[i] = (char*) (argv[i] - (char*) argv + sp);
   memcpy(s, argv, total_len);
+  
+  // sys_execve(const char *path, char *const argv[], char *const envp[])
+
   sys_execve(argv[0], (char**) sp, (char**) (sp + argc * sizeof(char*)));
 }
 
