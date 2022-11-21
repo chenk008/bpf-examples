@@ -1,0 +1,26 @@
+--- fs/Kconfig.org	2016-01-12 11:34:20.000005000 +0800
++++ fs/Kconfig	2016-01-18 03:35:34.000021000 +0800
+@@ -270,4 +270,23 @@
+ source "fs/nls/Kconfig"
+ source "fs/dlm/Kconfig"
+ 
++config SAMPLEFS_FS
++        tristate "Sample filesystem (EXPERIMENTAL)"
++        help
++          Samplefs is a sample filesystem for learning how to build
++          a simple Linux filesystem
++
++          If unsure, say N.
++
++config SAMPLEFS_DEBUG
++   bool "Additional debugging statements for samplefs"
++   depends on SAMPLEFS_FS
++   help
++           Enabling this option adds a few more debugging routines
++           to the samplefs code which slightly increases the size of
++           the samplefs module and can cause additional logging of debug
++           messages in some error paths, slowing performance. This
++           option can be turned off unless you are debugging
++           samplefs problems.  If unsure, say N.
++
+ endmenu

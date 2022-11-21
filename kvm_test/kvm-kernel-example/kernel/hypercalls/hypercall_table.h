@@ -1,3 +1,4 @@
+
 #ifndef HYPERCALL_TABLE_H
 #define HYPERCALL_TABLE_H
 
