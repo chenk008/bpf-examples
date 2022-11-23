@@ -14,3 +14,14 @@ bak
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+*.o.cmd
+*.mod
+*.ko
+*.ko.cmd
+*.symvers.cmd
+*.order.cmd
+*.mod.cmd
+*.symvers
+*.order
+*.mod.c

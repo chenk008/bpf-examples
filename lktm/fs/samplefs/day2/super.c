@@ -77,10 +77,12 @@ samplefs_parse_mount_options(char *options, struct samplefs_sb_info *sfs_sb)
 			continue;
 		value = strchr(data, '=');
 		if (value != NULL)
+			// 把 '=' 替换成 '\0，value往后移动一个位置
 			*value++ = '\0';
 
 		if (strncasecmp(data, "rsize", 5) == 0) {
 			if (value && *value) {
+				// 转换成 string to unsigned long
 				ret = kstrtoul(value, 0, &size);
 				if (ret) {
 					pr_err("kstrtoul error:%d\n", ret);
@@ -109,16 +111,18 @@ static int samplefs_fill_super(struct super_block *sb, void *data, int silent)
 	struct inode *inode;
 	struct samplefs_sb_info *sfs_sb;
 
+//文件系统可以处理的最大文件长度
 	sb->s_maxbytes = MAX_LFS_FILESIZE; /* NB: may be too large for mem */
-	sb->s_blocksize = PAGE_SIZE;
+	sb->s_blocksize = PAGE_SIZE;//文件系统的块长度
 	sb->s_blocksize_bits = PAGE_SHIFT;
 	sb->s_magic = SAMPLEFS_MAGIC;
-	sb->s_op = &samplefs_super_ops;
-	sb->s_time_gran = 1; /* 1 nanosecond time granularity */
+	sb->s_op = &samplefs_super_ops; // 函数指针的结构
+	sb->s_time_gran = 1; /* 1 nanosecond time granularity */ //文件系统支持的各种时间戳的最大可能的粒度
 
 /* Eventually replace iget with:
 	inode = samplefs_get_inode(sb, S_IFDIR | 0755, 0); */
 
+	// 创建一个inode
 	inode = iget_locked(sb, SAMPLEFS_ROOT_I);
 
 	if (!inode)
@@ -126,13 +130,16 @@ static int samplefs_fill_super(struct super_block *sb, void *data, int silent)
 
 	unlock_new_inode(inode);
 
+	// 存储当前文件系统的super block信息（每种文件系统可以有自定义的信息）
 	sb->s_fs_info = kzalloc(sizeof(struct samplefs_sb_info), GFP_KERNEL);
 	sfs_sb = SFS_SB(sb);
 	if (!sfs_sb) {
+		// Puts an inode, dropping its usage count. If the inode use count hits zero, the inode is then freed and may also be destroyed.
 		iput(inode);
 		return -ENOMEM;
 	}
 
+//分配一个dentry结构体。该结构体的成员d_name.name以“/”命名，并且将该dentry的d_sb和d_inode分别指向之前建立的超级块和inode节点。
 	sb->s_root = d_make_root(inode);
 	if (!sb->s_root) {
 		iput(inode);
@@ -140,6 +147,7 @@ static int samplefs_fill_super(struct super_block *sb, void *data, int silent)
 		return -ENOMEM;
 	}
 
+	// 设置 negative language support，这是samplefs_sb_info自带的成员。
 	/* below not needed for many fs - but an example of per fs sb data */
 	sfs_sb->local_nls = load_nls_default();
 

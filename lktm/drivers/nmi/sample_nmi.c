@@ -33,13 +33,16 @@ static int samplenmi_handler(unsigned int cmd, struct pt_regs *regs)
 	unsigned long rsp;
 	static int i;
 
-	if (nmi_ignore)
+	if (nmi_ignore){
+		
 		return NMI_DONE;
+	}
+	pr_err("test1\n");
 
 	rsp = regs->sp;
 
 	if (rsp < __PAGE_OFFSET) {
-		show_regs(regs); /* This requires EXPORT_SYMBOL(show_regs) in kernel */
+		// show_regs(regs); /* This requires EXPORT_SYMBOL(show_regs) in kernel */
 		pr_err("User Stack Pointer: %016lx", rsp);
 		pr_err("User Stack Dump: %016lx", *((unsigned long *)rsp));
 	} else {
@@ -70,7 +73,6 @@ static int __init samplenmi_init(void)
 static void __exit samplenmi_exit(void)
 {
 	unregister_nmi_handler(NMI_LOCAL, "samplenmi_handler");
-
 	pr_info("samplenmi: module unloaded\n");
 }
 
