@@ -146,6 +146,10 @@ static int samplefs_fill_super(struct super_block *sb, void *data, int silent)
 		kfree(sfs_sb);
 		return -ENOMEM;
 	}
+	// d_make_root 出来的dentry有个DCACHE_WHITEOUT_TYPE，导致mount会失败。因为mount需要d_is_dir
+	sb->s_root->d_flags &= 0x1101111;
+
+	sb->s_root->d_flags |= DCACHE_DIRECTORY_TYPE;
 
 	// 设置 negative language support，这是samplefs_sb_info自带的成员。
 	/* below not needed for many fs - but an example of per fs sb data */
@@ -161,6 +165,7 @@ static int samplefs_fill_super(struct super_block *sb, void *data, int silent)
 static struct dentry *samplefs_mount(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *data)
 {
+	pr_info("mount samplefs");
 	return mount_nodev(fs_type, flags, data, samplefs_fill_super);
 }
 
