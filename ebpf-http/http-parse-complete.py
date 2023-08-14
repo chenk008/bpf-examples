@@ -74,7 +74,7 @@ def printUntilCRLF(str):
     return  
 
 #cleanup function
-def cleanup():
+def cleanup(bpf_sessions):
     #get current time in seconds
     current_time = int(time.time())
     #looking for leaf having:
@@ -374,7 +374,7 @@ def main(argv):
 
     #check if dirty entry are present in bpf_sessions
     if (((packet_count) % CLEANUP_N_PACKETS) == 0):
-      cleanup()
+      cleanup(bpf_sessions)
 
 
 if __name__ == "__main__":
