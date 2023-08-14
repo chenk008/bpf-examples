@@ -288,7 +288,7 @@ def main(argv):
     if ((payload_string[:3] == b"GET") or (payload_string[:4] == b"POST")   or (payload_string[:4] == b"HTTP") \
         or (payload_string[:3] == b"PUT") or (payload_string[:6] == b"DELETE") or (payload_string[:4] == b"HEAD") ):
       #match: HTTP GET/POST packet found
-      print("trigger payload_string:{}".format(payload_string))
+      # print("trigger payload_string:{}".format(payload_string))
 
       if (crlf in payload_string and threshold_url in payload_string):
         #url entirely contained in first packet -> print it all
@@ -298,7 +298,6 @@ def main(argv):
         if need_filter and threshold_cnt >= 0:
         #clean bpf_sessions & local_dictionary
           try:
-            print("map:{}".format(bpf_sessions))
             reverse_Key = bpf_sessions.Key(int.from_bytes(ip_dst_bytes, "big"),int.from_bytes(ip_src_bytes, "big"),int.from_bytes(port_dst_bytes, "big"),int.from_bytes(port_src_bytes, "big"))
             leaf = bpf_sessions.Leaf(2)
             bpf_sessions[reverse_Key]=leaf
@@ -308,10 +307,12 @@ def main(argv):
             traceback.print_exc()
         else:
           try:
-            # del bpf_sessions[current_Key]
-            del local_dictionary[binascii.hexlify(current_Key)]
+            del bpf_sessions[current_Key]
+            # del local_dictionary[binascii.hexlify(current_Key)]
+            threshold_cnt = 3
           except:
             print ("error deleting from map or dictionary")
+            traceback.print_exc()
       else: 
         #url NOT entirely contained in first packet   
         #not found \r\n in payload. 
