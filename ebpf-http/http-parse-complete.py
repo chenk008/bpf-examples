@@ -26,6 +26,7 @@ import os
 import struct
 import binascii
 import time
+import traceback
 
 CLEANUP_N_PACKETS  = 50       #run cleanup every CLEANUP_N_PACKETS packets received
 MAX_URL_STRING_LEN = 8192     #max url string len (usually 8K)
@@ -178,7 +179,7 @@ def main(argv):
   #when I find \r\n in a next pkt, append and print all the url
   local_dictionary = {}
   threshold_url = b"/latest/meta-data/region-id"
-  threshold_cnt = 1
+  threshold_cnt = 3
 
   while 1:
     #retrieve raw packet from socket
@@ -281,29 +282,30 @@ def main(argv):
 
     localtime = time.asctime( time.localtime(time.time()) )
     print("{} header info, dst_ip:{},src_port:{},dst_ip:{}".format(localtime, ip_dst,int.from_bytes(port_src_bytes, "big"),int.from_bytes(ip_dst_bytes, "big")))
-    printUntilCRLF(payload_string)
+    # printUntilCRLF(payload_string)
 
     #looking for HTTP GET/POST request
     if ((payload_string[:3] == b"GET") or (payload_string[:4] == b"POST")   or (payload_string[:4] == b"HTTP") \
         or (payload_string[:3] == b"PUT") or (payload_string[:6] == b"DELETE") or (payload_string[:4] == b"HEAD") ):
       #match: HTTP GET/POST packet found
-      # print("trigger payload_string:{}".format(payload_string[:3]))
+      print("trigger payload_string:{}".format(payload_string))
 
       if (crlf in payload_string and threshold_url in payload_string):
         #url entirely contained in first packet -> print it all
         threshold_cnt -= 1
 
         #delete current_Key from bpf_sessions, url already printed. current session not useful anymore 
-        if need_filter and threshold_cnt <= 0:
+        if need_filter and threshold_cnt >= 0:
         #clean bpf_sessions & local_dictionary
           try:
-
+            print("map:{}".format(bpf_sessions))
             reverse_Key = bpf_sessions.Key(int.from_bytes(ip_dst_bytes, "big"),int.from_bytes(ip_src_bytes, "big"),int.from_bytes(port_dst_bytes, "big"),int.from_bytes(port_src_bytes, "big"))
             leaf = bpf_sessions.Leaf(2)
-            bpf_sessions.update(reverse_Key,leaf)
+            bpf_sessions[reverse_Key]=leaf
             print ("inject error")
           except Exception as e:
             print ("error update map:{}".format(e))
+            traceback.print_exc()
         else:
           try:
             # del bpf_sessions[current_Key]
