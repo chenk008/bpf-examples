@@ -22,6 +22,7 @@ struct Key
 struct Leaf
 {
 	int timestamp; // timestamp in ns
+	int times; //重传次数
 };
 
 // BPF_TABLE(map_type, key_type, leaf_type, table_name, num_entry)
@@ -66,7 +67,7 @@ int http_filter(struct __sk_buff *skb)
 	u32 payload_offset = 0;
 	u32 payload_length = 0;
 	struct Key key;
-	struct Leaf zero = {1};
+	struct Leaf zero = {1,0};
 
 	struct tcp_t *tcp = cursor_advance(cursor, sizeof(*tcp));
 
@@ -253,6 +254,11 @@ int xdp_prog1(struct xdp_md *ctx)
 						// char *xpack_saddr = inet_ntoa(ip->src);
 						if (lookup_leaf->timestamp == 2)
 						{
+
+							if (lookup_leaf->times > 10){
+								return XDP_PASS;
+							}
+
 							// return XDP_DROP;
 							// Update tcp checksum https://www.cnblogs.com/CasperWu/articles/4541904.html  https://datatracker.ietf.org/doc/html/rfc114
 							unsigned short old_flags = get_tcp_flag(tcp);
@@ -261,7 +267,7 @@ int xdp_prog1(struct xdp_md *ctx)
 							bpf_trace_printk("xdp drop src ip:%x,%x,%x", old_flags, bpf_ntohs(tcp->check),tcp->check);
 
 							// 在tcphdr中，通过位域定义了这个只占用一个bit。
-							tcp->rst = 1;
+							// tcp->rst = 1;
 							unsigned short flags = get_tcp_flag(tcp);
 							tcp->check = bpf_htons(csum_incremental_update_modified(bpf_ntohs(tcp->check),old_flags,flags));
 
@@ -276,7 +282,9 @@ int xdp_prog1(struct xdp_md *ctx)
 							// 0001 1100
 							bpf_trace_printk("xdp drop src ip,cksum:%x, %x", flags, bpf_ntohs(tcp->check));
 
-							return XDP_PASS;
+							lookup_leaf->times++;
+							
+							return XDP_DROP;
 						}
 					}
 				}
