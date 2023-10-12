@@ -38,6 +38,7 @@
 /* helpful if this is different than other fs */
 #define SAMPLEFS_MAGIC     0x73616d70 /* "SAMP" */
 
+// 声明模块的参数
 unsigned int sample_parm = 0;
 module_param(sample_parm, int, 0);
 MODULE_PARM_DESC(sample_parm, "An example parm. Default: x Range: y to z");
@@ -218,6 +219,7 @@ void sfs_proc_init(void)
 	if (proc_fs_samplefs == NULL)
 		return;
 
+	// 调用 proc_create 在 fs/samplefs 目录下创建 DebugData 时，该调用还须声明 struct file_operations，
 	proc_create("DebugData", 0, proc_fs_samplefs,
 	    &samplefs_debug_data_proc_fops);
 }
