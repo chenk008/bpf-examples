@@ -53,3 +53,16 @@ bpftool net list dev eth0
 bpftool net  detach xdpgeneric dev eth0
 
 tcpdump src host 100.100.100.200  -v -X -i eth0
+
+
+http_filter 中是用于流量复制，相当于抓包
+
+xdp_prog1 中根据map中的数据timestamp==2，去控制包的流转。比如设置rst，或者丢弃包
+
+
+curl 100.100.100.200/latest/meta-data/region-id 第四次才可以访问，以此循环: 第1，2，3次不能访问，第4次可以，第5，6，7次不能访问，第8次可以
+
+
+查看bpf的输出：
+
+cat  /sys/kernel/debug/tracing/trace_pipe
