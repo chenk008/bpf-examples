@@ -1,0 +1,11 @@
+bpftrace --include linux/path.h --include linux/dcache.h     -e 'kprobe:vfs_mkdir { printf("open path: %s, %s, %s, %d\n", str(((struct dentry *)arg1)->d_name.name), str(((struct dentry *)arg1)->d_parent->d_name.name) ,comm,pid); }'
+
+
+bpftrace --include linux/path.h --include linux/dcache.h     -e 'kprobe:security_path_mkdir { printf("open path: %s, %s, %s, %d\n", str(((struct dentry *)arg1)->d_name.name), str(((struct dentry *)arg1)->d_parent->d_name.name) ,comm,pid); }'
+
+
+
+bpftrace --include linux/path.h --include linux/dcache.h     -e 'kprobe:do_mkdirat { printf("open path: %s, %s, %d\n", str(arg1) ,comm,pid); }'
+
+
+ bpftrace -e 'tracepoint:syscalls:sys_enter_mkdirat { printf("open path: %s, %s, %d\n", str(args->pathname) ,comm,pid); }'
